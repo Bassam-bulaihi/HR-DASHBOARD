@@ -1,0 +1,34 @@
+{
+  "name": "hr-core-dashboard",
+  "version": "1.0.0",
+  "description": "HR Core — لوحة تحكم الموارد البشرية | RTL Arabic HR dashboard with flat-file JSON persistence",
+  "main": "server/index.js",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "prestart": "node scripts/vendor.js",
+    "start": "node server/index.js",
+    "dev": "node scripts/vendor.js && node --watch server/index.js",
+    "vendor": "node scripts/vendor.js",
+    "seed": "node scripts/seed.js",
+    "reset": "node scripts/seed.js --force",
+    "test": "node scripts/e2e.js"
+  },
+  "dependencies": {
+    "@fontsource/ibm-plex-sans-arabic": "^5.0.0",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "lucide": "^0.446.0"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "jsdom": "^25.0.1",
+    "playwright": "^1.47.0"
+  }
+}

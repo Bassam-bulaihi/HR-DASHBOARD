@@ -1,0 +1,29 @@
+[
+  {
+    "id": "usr_admin",
+    "name": "بسام البليهي",
+    "email": "admin@hr360.sa",
+    "role": "admin",
+    "active": true,
+    "passwordHash": "$2a$10$QqrcifYKBrSDyt/au/6cze2VmCy8bLI6npK88gm4uRy7zB4blnuOG",
+    "createdAt": "2024-01-01T08:00:00.000Z"
+  },
+  {
+    "id": "usr_hr",
+    "name": "سارة الأحمدي",
+    "email": "hr@hr360.sa",
+    "role": "hr-standard",
+    "active": true,
+    "passwordHash": "$2a$10$FjCHpwkVMbckEwBJ0Z2EvuYbrWsLdmPvEYLeayEfo2YmKJRKwAw8m",
+    "createdAt": "2024-01-01T08:00:00.000Z"
+  },
+  {
+    "id": "usr_viewer",
+    "name": "فهد المالكي",
+    "email": "viewer@hr360.sa",
+    "role": "view-only",
+    "active": true,
+    "passwordHash": "$2a$10$VZKzbNrqZbUFOnhslaMz6OJmbM3pMiR9riJV0J5PBe.mCbErddvF.",
+    "createdAt": "2024-01-01T08:00:00.000Z"
+  }
+]
