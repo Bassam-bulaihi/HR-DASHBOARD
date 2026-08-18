@@ -63,30 +63,32 @@ app.use((err, _req, res, _next) => {
 });
 
 const PORT = Number(process.env.PORT) || 3000;
-const HOST = process.env.HOST || '0.0.0.0'; // 0.0.0.0 so Replit can publish it
+const HOST = process.env.HOST || '0.0.0.0';
 
-const server = app.listen(PORT, HOST, async () => {
-  const storage = await healthCheck();
-  const broken = Object.entries(storage).filter(([, s]) => !s.ok);
+// Vercel runs the app as a serverless function — no listen() needed.
+if (!process.env.VERCEL) {
+  const server = app.listen(PORT, HOST, async () => {
+    const storage = await healthCheck();
+    const broken = Object.entries(storage).filter(([, s]) => !s.ok);
 
-  console.log(`\n  HR Core يعمل على http://${HOST}:${PORT}`);
-  console.log(`  مجلد البيانات: ${DATA_DIR}`);
+    console.log(`\n  HR Core يعمل على http://${HOST}:${PORT}`);
+    console.log(`  مجلد البيانات: ${DATA_DIR}`);
 
-  if (broken.length) {
-    console.warn('\n  ⚠ ملفات بيانات غير صالحة:');
-    broken.forEach(([name, s]) => console.warn(`    • ${name}: ${s.error}`));
-    console.warn('  شغّل "npm run seed" لإصلاحها.\n');
-  } else {
-    const counts = Object.entries(storage)
-      .map(([n, s]) => `${n}=${s.count}`)
-      .join('  ');
-    console.log(`  البيانات: ${counts}\n`);
+    if (broken.length) {
+      console.warn('\n  ⚠ ملفات بيانات غير صالحة:');
+      broken.forEach(([name, s]) => console.warn(`    • ${name}: ${s.error}`));
+      console.warn('  شغّل "npm run seed" لإصلاحها.\n');
+    } else {
+      const counts = Object.entries(storage)
+        .map(([n, s]) => `${n}=${s.count}`)
+        .join('  ');
+      console.log(`  البيانات: ${counts}\n`);
+    }
+  });
+
+  for (const signal of ['SIGTERM', 'SIGINT']) {
+    process.on(signal, () => server.close(() => process.exit(0)));
   }
-});
-
-// Replit restarts containers frequently; exit cleanly so the port frees up.
-for (const signal of ['SIGTERM', 'SIGINT']) {
-  process.on(signal, () => server.close(() => process.exit(0)));
 }
 
 export default app;
