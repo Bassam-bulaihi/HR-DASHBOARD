@@ -10,25 +10,60 @@
  *   - Writes are full-file rewrites: read -> mutate -> write
  *   - No concurrent-write handling; a single in-process mutex serialises writes
  *     just enough to stop one request clobbering another mid-flight.
+ *
+ * Serverless (Vercel/Lambda) note:
+ *   The deployment bundle is mounted READ-ONLY — only /tmp is writable. Writing
+ *   straight into the bundled data/ directory fails with EROFS, which is what
+ *   turned every "add employee" / "record attendance" / "pay salaries" button
+ *   into a 500. So on serverless we treat the bundled data/ as a read-only SEED
+ *   and keep the live copy in a writable scratch directory, seeding it lazily on
+ *   the first touch of each collection.
+ *
+ *   Consequence: edits live as long as the warm instance does. A cold start —
+ *   or a second concurrent instance — starts again from the seed. That is the
+ *   ceiling of a flat-file store on serverless; swap these functions for a real
+ *   database (Postgres/KV) when the data needs to outlive the container.
  */
 
 import { promises as fs } from 'fs';
+import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = process.env.DATA_DIR
+
+/** The dataset shipped with the code. Always readable, not always writable. */
+const SEED_DIR = path.join(__dirname, '..', 'data');
+
+/** True on Vercel and other Lambda-backed runtimes with a read-only bundle. */
+const IS_SERVERLESS = Boolean(
+  process.env.VERCEL ||
+    process.env.AWS_LAMBDA_FUNCTION_NAME ||
+    process.env.LAMBDA_TASK_ROOT
+);
+
+/**
+ * Where live data actually lives. An explicit DATA_DIR always wins; otherwise
+ * serverless gets a writable scratch dir and everything else uses the repo copy.
+ */
+let DATA_DIR = process.env.DATA_DIR
   ? path.resolve(process.env.DATA_DIR)
-  : path.join(__dirname, '..', 'data');
+  : IS_SERVERLESS
+    ? path.join(os.tmpdir(), 'hr-core-data')
+    : SEED_DIR;
 
 const COLLECTIONS = ['users', 'employees', 'attendance', 'payroll', 'notifications'];
+
+/** Errors that mean "this directory is not writable", not "this write is wrong". */
+const READ_ONLY_CODES = new Set(['EROFS', 'EACCES', 'EPERM']);
 
 /* ------------------------------------------------------------------ *
  * Low-level file IO
  * ------------------------------------------------------------------ */
 
-const filePathFor = (collection) => path.join(DATA_DIR, `${collection}.json`);
+const filePathFor = (collection, dir = DATA_DIR) =>
+  path.join(dir, `${collection}.json`);
 
 /**
  * Serialises writes per-collection. Without this, two concurrent POSTs both read
@@ -48,8 +83,77 @@ function withLock(collection, fn) {
   return next;
 }
 
+/** Collections already copied out of the seed into DATA_DIR this process. */
+const seeded = new Set();
+
+/**
+ * Make sure DATA_DIR holds a working copy of `collection` before we read or
+ * write it. No-op when DATA_DIR *is* the seed directory (normal local dev).
+ */
+async function ensureSeeded(collection) {
+  if (DATA_DIR === SEED_DIR || seeded.has(collection)) return;
+
+  const target = filePathFor(collection);
+  try {
+    await fs.access(target);
+    seeded.add(collection);
+    return;
+  } catch {
+    /* not copied yet — fall through */
+  }
+
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  let contents = '[]';
+  try {
+    contents = await fs.readFile(filePathFor(collection, SEED_DIR), 'utf8');
+  } catch {
+    // No seed file shipped (notifications start empty) — an empty array is the
+    // right starting point rather than a hard failure.
+  }
+  await fs.writeFile(target, contents, 'utf8');
+  seeded.add(collection);
+}
+
+/**
+ * Last-resort recovery: a write blew up because the directory is read-only in a
+ * way we did not predict from env vars. Relocate to a writable scratch dir,
+ * carrying the current contents across, so the request can be retried once.
+ * Returns true if the relocation happened.
+ */
+async function relocateToWritableDir() {
+  const scratch = path.join(os.tmpdir(), 'hr-core-data');
+  if (DATA_DIR === scratch) return false;
+
+  const previousDir = DATA_DIR;
+  await fs.mkdir(scratch, { recursive: true });
+  for (const collection of COLLECTIONS) {
+    const dest = path.join(scratch, `${collection}.json`);
+    try {
+      await fs.access(dest);
+      continue; // already relocated by an earlier request
+    } catch {
+      /* needs copying */
+    }
+    let contents = '[]';
+    try {
+      contents = await fs.readFile(filePathFor(collection, previousDir), 'utf8');
+    } catch {
+      /* missing source — start empty */
+    }
+    await fs.writeFile(dest, contents, 'utf8');
+  }
+  DATA_DIR = scratch;
+  COLLECTIONS.forEach((c) => seeded.add(c));
+  console.warn(
+    `[store] ${previousDir} is read-only — live data relocated to ${scratch}. ` +
+      'Changes will reset when the instance restarts.'
+  );
+  return true;
+}
+
 async function readFile(collection) {
   assertCollection(collection);
+  await ensureSeeded(collection);
   try {
     const raw = await fs.readFile(filePathFor(collection), 'utf8');
     const parsed = JSON.parse(raw);
@@ -77,8 +181,7 @@ async function readFile(collection) {
   }
 }
 
-async function writeFile(collection, rows) {
-  assertCollection(collection);
+async function writeOnce(collection, rows) {
   const target = filePathFor(collection);
   const tmp = `${target}.${process.pid}.tmp`;
   // Write to a temp file then rename. Rename is atomic on POSIX, so a crash
@@ -86,6 +189,21 @@ async function writeFile(collection, rows) {
   await fs.writeFile(tmp, JSON.stringify(rows, null, 2), 'utf8');
   await fs.rename(tmp, target);
   return rows;
+}
+
+async function writeFile(collection, rows) {
+  assertCollection(collection);
+  await ensureSeeded(collection);
+  try {
+    return await writeOnce(collection, rows);
+  } catch (err) {
+    if (!READ_ONLY_CODES.has(err.code)) throw err;
+    // The target turned out to be read-only. Move the dataset somewhere writable
+    // and retry once; if that still fails the environment is genuinely broken.
+    const moved = await relocateToWritableDir();
+    if (!moved) throw err;
+    return writeOnce(collection, rows);
+  }
 }
 
 function assertCollection(collection) {

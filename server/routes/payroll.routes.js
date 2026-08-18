@@ -47,6 +47,31 @@ export function computeForEmployee(employee, attendanceRows) {
   };
 }
 
+/** The payroll period the app is currently operating in, e.g. "2026-08". */
+export function currentPeriod() {
+  return new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString().slice(0, 7);
+}
+
+/**
+ * Create the payroll row for a newly hired employee.
+ *
+ * Without this a new hire is invisible on the payroll page until someone
+ * happens to press "إعادة الاحتساب" — the record looked like it had failed to
+ * save. Called from the employee create route.
+ */
+export async function ensurePayrollRow(employee) {
+  const period = currentPeriod();
+  const id = `pay_${employee.id.slice(4)}_${period.replace('-', '')}`;
+  const existing = await findById('payroll', id);
+  if (existing) return existing;
+  return insert('payroll', {
+    id,
+    period,
+    ...computeForEmployee(employee, await list('attendance')),
+    status: 'معلق',
+  });
+}
+
 /** Joins payroll rows onto their employee for display. */
 async function decorate(rows) {
   const employees = await list('employees');
@@ -167,7 +192,9 @@ router.post(
       const attendance = await list('attendance');
       const existing = await list('payroll');
       const statusByEmployee = new Map(existing.map((p) => [p.employeeId, p.status]));
-      const period = req.body?.period || '2024-01';
+      // Default to the month being worked in rather than a hardcoded 2024-01,
+      // which produced payroll ids that no longer matched the seeded rows.
+      const period = req.body?.period || currentPeriod();
 
       const rebuilt = employees.map((emp) => ({
         id: `pay_${emp.id.slice(4)}_${period.replace('-', '')}`,

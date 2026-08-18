@@ -19,6 +19,20 @@ const state = {
 
 const STATUSES = ['حاضر', 'غائب', 'متأخر', 'في إجازة'];
 
+/**
+ * Today in the *browser's* timezone as YYYY-MM-DD.
+ * `new Date().toISOString()` converts to UTC first, which in Riyadh (UTC+3)
+ * rolls the date back a day for anything logged before 03:00 — and the date
+ * input was hardcoded to a fixed day anyway. Attendance is a record of what
+ * already happened, so today is both the sensible default and the latest
+ * date the picker may offer.
+ */
+function todayISO() {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
 export function renderAttendance(root, ctx) {
   const canWrite = ['admin', 'hr-standard'].includes(ctx.user.role);
 
@@ -262,6 +276,8 @@ export function renderAttendance(root, ctx) {
   async function openRecordModal() {
     const { data: employees } = await api.employees({ pageSize: 50 });
 
+    const today = todayISO();
+
     openModal({
       title: 'تسجيل حضور',
       render: () => `
@@ -280,7 +296,7 @@ export function renderAttendance(root, ctx) {
               <div class="form-row">
                 <label class="label" for="a-date">التاريخ</label>
                 <input class="input" id="a-date" name="date" type="date" dir="ltr"
-                       required value="2024-01-13" />
+                       required value="${today}" max="${today}" />
               </div>
               <div class="form-row">
                 <label class="label" for="a-status">الحالة</label>

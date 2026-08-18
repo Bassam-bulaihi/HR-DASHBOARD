@@ -156,9 +156,6 @@ function renderShell() {
                   <span class="notif-dropdown__title">الإعدادات</span>
                 </div>
                 <div style="padding:8px">
-                  <button class="nav__item" id="toggleThemeBtn" style="width:100%;border-radius:8px">
-                    ${icon('sun', 18)} الوضع الفاتح
-                  </button>
                   <button class="nav__item" id="settingsLogoutBtn" style="width:100%;border-radius:8px;color:var(--danger)">
                     ${icon('log-out', 18)} تسجيل الخروج
                   </button>
@@ -291,11 +288,6 @@ function renderShell() {
     currentUser = null;
     toast('تم تسجيل الخروج');
     showLogin();
-  });
-
-  root.querySelector('#toggleThemeBtn').addEventListener('click', () => {
-    toast('الوضع الداكن قيد التطوير');
-    closeAllDropdowns();
   });
 
   // Close any dropdown when clicking outside

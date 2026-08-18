@@ -213,10 +213,12 @@ async function main() {
     /\d/.test(doc.querySelector('#payCards .card__value')?.textContent || ''),
     doc.querySelector('#payCards .card__value')?.textContent
   );
+  // The department comparison moved from .dept-bar divs to an SVG bar chart;
+  // count the rendered bars in the chart itself.
   check(
     'تحليل الأقسام يُرسم',
-    doc.querySelectorAll('#deptAnalytics .dept-bar').length > 0,
-    `${doc.querySelectorAll('#deptAnalytics .dept-bar').length} bars`
+    doc.querySelectorAll('#deptAnalytics svg.chart-bar rect').length > 0,
+    `${doc.querySelectorAll('#deptAnalytics svg.chart-bar rect').length} bars`
   );
   check('زر صرف الرواتب ظاهر للمدير', Boolean(doc.querySelector('#payAllBtn')));
   check(

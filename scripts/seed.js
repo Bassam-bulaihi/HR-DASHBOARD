@@ -50,11 +50,36 @@ const ROSTER = [
 
 const STATUSES = ['حاضر', 'غائب', 'متأخر', 'في إجازة'];
 
-// Ten working days ending 2024-01-13, matching the date shown in the Figma design.
-const DATES = [
-  '2024-01-02', '2024-01-03', '2024-01-04', '2024-01-07', '2024-01-08',
-  '2024-01-09', '2024-01-10', '2024-01-11', '2024-01-12', '2024-01-13',
-];
+/**
+ * The last `count` working days (the Saudi week runs Sunday–Thursday), ending
+ * today, oldest first.
+ *
+ * The dataset used to be pinned to January 2024 to match the Figma mock. That
+ * made every seeded day sit years in the past, so the dashboard opened on stale
+ * history and the attendance form defaulted to a date nobody wanted. Anchoring
+ * on the run date keeps the demo current, and every generated day is by
+ * construction today or earlier.
+ */
+function lastWorkingDays(count) {
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const days = [];
+  const cursor = new Date();
+  while (days.length < count) {
+    const dow = cursor.getDay(); // 5 = Friday, 6 = Saturday — the weekend here
+    if (dow !== 5 && dow !== 6) {
+      days.push(
+        `${cursor.getFullYear()}-${pad2(cursor.getMonth() + 1)}-${pad2(cursor.getDate())}`
+      );
+    }
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return days.reverse();
+}
+
+const DATES = lastWorkingDays(10);
+
+/** Payroll period covering the seeded range, e.g. "2026-08". */
+const PERIOD = DATES[DATES.length - 1].slice(0, 7);
 
 /* ------------------------------------------------------------------ *
  * Deterministic pseudo-randomness
@@ -160,7 +185,7 @@ function buildAttendance(employees) {
 }
 
 function buildPayroll(employees, attendance) {
-  const period = '2024-01';
+  const period = PERIOD;
   return employees.map((emp) => {
     const mine = attendance.filter((a) => a.employeeId === emp.id);
     const present = mine.filter((a) => a.status === 'حاضر').length;
@@ -192,7 +217,7 @@ function buildPayroll(employees, attendance) {
       deductions,
       netSalary,
       status: rand() < 0.75 ? 'مدفوع' : 'معلق',
-      createdAt: '2024-01-13T08:00:00.000Z',
+      createdAt: `${DATES[DATES.length - 1]}T08:00:00.000Z`,
     };
   });
 }
@@ -230,6 +255,9 @@ async function main() {
   await writeIfAllowed('employees', employees);
   await writeIfAllowed('attendance', attendance);
   await writeIfAllowed('payroll', payroll);
+  // The activity log starts empty, but the file has to exist for the bell icon
+  // to read anything on a fresh checkout.
+  await writeIfAllowed('notifications', []);
 
   console.log('\nحسابات الدخول التجريبية:');
   console.log('  admin@hr360.sa  / Admin@123  (مدير النظام)');

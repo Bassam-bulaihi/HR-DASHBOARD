@@ -1,26 +1,25 @@
 import { Router } from 'express';
-import { promises as fs } from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { list, replaceAll } from '../store.js';
 import { requireAuth } from '../auth.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const NOTIF_FILE = path.join(__dirname, '..', '..', 'data', 'notifications.json');
 const MAX_NOTIFICATIONS = 50;
 
 const router = Router();
 
+// Notifications go through store.js like every other collection. Reading them
+// directly off disk here used to bypass the serverless writable-dir handling,
+// so "mark all as read" silently did nothing on Vercel.
 async function readNotifications() {
   try {
-    const raw = await fs.readFile(NOTIF_FILE, 'utf8');
-    return JSON.parse(raw);
+    return await list('notifications');
   } catch {
+    // A missing or unreadable log should never break the bell icon.
     return [];
   }
 }
 
-async function writeNotifications(list) {
-  await fs.writeFile(NOTIF_FILE, JSON.stringify(list.slice(0, MAX_NOTIFICATIONS), null, 2), 'utf8');
+async function writeNotifications(rows) {
+  await replaceAll('notifications', rows.slice(0, MAX_NOTIFICATIONS));
 }
 
 /** GET /api/notifications — returns latest 20 */

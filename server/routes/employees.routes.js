@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { list, findById, findOne, insert, update, remove, removeWhere } from '../store.js';
 import { requireAuth, requireRole, canWrite, canDelete } from '../auth.js';
 import { pushNotification } from './notifications.routes.js';
+import { ensurePayrollRow } from './payroll.routes.js';
 
 const router = Router();
 
@@ -120,6 +121,10 @@ router.post('/', requireAuth, requireRole(...canWrite), async (req, res, next) =
       hireDate: req.body.hireDate || new Date().toISOString().slice(0, 10),
       active: true,
     });
+
+    // Give the new hire a payroll row straight away, otherwise they are absent
+    // from the payroll page until someone manually recalculates.
+    await ensurePayrollRow(created);
 
     await pushNotification({ type: 'employee', title: 'موظف جديد', body: `تمت إضافة ${created.name} إلى قسم ${created.department}`, icon: 'user-plus' });
     res.status(201).json({ data: created });

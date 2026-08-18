@@ -5,7 +5,7 @@
     "email": "admin@hr360.sa",
     "role": "admin",
     "active": true,
-    "passwordHash": "$2a$10$JNLEx4z7KZjz.qT2gDnAV.w1dpsTz0Q.YwExD5RXLGfHtp0FgRkjG",
+    "passwordHash": "$2a$10$nNwvDDvtonIJVJ/kWXSXiu8jyVLsAN2/tsujF/FXpr289FpGqlYDS",
     "createdAt": "2024-01-01T08:00:00.000Z"
   },
   {
@@ -14,7 +14,7 @@
     "email": "hr@hr360.sa",
     "role": "hr-standard",
     "active": true,
-    "passwordHash": "$2a$10$3fzZBDAc7PEIMA1DiSe1Eead5saBWFaQcDBeKLwrO4eC0LT8yJVoi",
+    "passwordHash": "$2a$10$YMYV6rVkwSvCAMgg0t05DOwswgLgAbLQNTU1NlKGYeD3WCV/2yjAK",
     "createdAt": "2024-01-01T08:00:00.000Z"
   },
   {
@@ -23,7 +23,7 @@
     "email": "viewer@hr360.sa",
     "role": "view-only",
     "active": true,
-    "passwordHash": "$2a$10$bIJoSzkk4jMqJRDwgjeHFOhKHCiSZI9Iad.RNeH/DKy/VleCMI04W",
+    "passwordHash": "$2a$10$w5Nnso44kr35fiWNQq1rtOIYlvKjbkj3QuWlFh5IGjU3.zJ2PoWI.",
     "createdAt": "2024-01-01T08:00:00.000Z"
   }
 ]

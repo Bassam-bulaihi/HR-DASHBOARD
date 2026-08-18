@@ -90,15 +90,20 @@ export function renderLogin(root, onSuccess) {
   const form = root.querySelector('#loginForm');
   const errorBox = root.querySelector('#loginError');
   const submitBtn = root.querySelector('#submitBtn');
+  // Looked up by id rather than through the form's named-property access, which
+  // is not implemented consistently outside real browsers and left these fields
+  // undefined under the jsdom test harness.
+  const emailInput = root.querySelector('#email');
+  const passwordInput = root.querySelector('#password');
 
   root.querySelectorAll('.demo-account').forEach((btn) => {
     btn.addEventListener('click', () => {
       const email = btn.dataset.email;
       const match = DEMO.find((d) => d[0] === email);
-      form.email.value = email;
-      form.password.value = match[1];
+      emailInput.value = email;
+      passwordInput.value = match[1];
       errorBox.hidden = true;
-      form.password.focus();
+      passwordInput.focus();
     });
   });
 
@@ -106,8 +111,8 @@ export function renderLogin(root, onSuccess) {
     e.preventDefault();
     errorBox.hidden = true;
 
-    const email = form.email.value.trim();
-    const password = form.password.value;
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
 
     if (!email || !password) {
       errorBox.textContent = 'أدخل البريد الإلكتروني وكلمة المرور.';
@@ -125,12 +130,12 @@ export function renderLogin(root, onSuccess) {
     } catch (err) {
       errorBox.textContent = err.message;
       errorBox.hidden = false;
-      form.password.select();
+      passwordInput.select();
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = 'دخول';
     }
   });
 
-  form.email.focus();
+  emailInput.focus();
 }

@@ -7,6 +7,13 @@ const router = Router();
 
 const VALID_STATUSES = ['حاضر', 'غائب', 'متأخر', 'في إجازة'];
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Today in Riyadh time (UTC+3) as YYYY-MM-DD — the business day the app runs on. */
+function todayISO() {
+  return new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
 /** Joins attendance rows onto their employee record for display. */
 async function decorate(rows) {
   const employees = await list('employees');
@@ -128,6 +135,16 @@ router.post('/', requireAuth, requireRole(...canWrite), async (req, res, next) =
     }
     if (!VALID_STATUSES.includes(status)) {
       return res.status(400).json({ error: 'حالة الحضور غير معروفة.' });
+    }
+    if (!ISO_DATE.test(String(date)) || Number.isNaN(Date.parse(date))) {
+      return res.status(400).json({ error: 'صيغة التاريخ غير صالحة.' });
+    }
+    // Attendance records what already happened; a future day cannot be attended.
+    // The date input caps itself too, but that cap is trivially bypassable.
+    if (String(date) > todayISO()) {
+      return res
+        .status(400)
+        .json({ error: 'لا يمكن تسجيل حضور بتاريخ مستقبلي.' });
     }
 
     const employee = await findById('employees', employeeId);
