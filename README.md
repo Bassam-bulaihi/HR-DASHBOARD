@@ -1,4 +1,4 @@
-# Car Maintenance Tracker
+# Car Maintenance Tracker(Car auto)
 
 ## Project Overview
 
@@ -6,7 +6,7 @@ Car Maintenance Tracker is a web application that helps car owners track vehicle
 
 ## Training Program
 
-**Training Program Name:** SDAIA
+**Training Program Name:** SDAIA Vibe coding
 **GitHub:** https://github.com/SDAIAAcademy
 
 ## Team Members
