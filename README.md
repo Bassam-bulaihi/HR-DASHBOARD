@@ -1,8 +1,8 @@
-# HR Dashboard
+# Car Maintenance Tracker
 
 ## Project Overview
 
-HR Dashboard is a full-stack web application designed to simplify and organize human resources management. It provides a centralized platform for managing employee information, tracking attendance, managing leave, and viewing salary data and analytics.
+Car Maintenance Tracker is a web application that helps car owners track vehicle maintenance and receive reminders through WhatsApp. Users can register multiple vehicles, track odometer readings, view maintenance status and history, and receive service reminders based on mileage or time intervals.
 
 ## Training Program
 
@@ -19,22 +19,25 @@ HR Dashboard is a full-stack web application designed to simplify and organize h
 
 ## Core Features
 
-* Employee management (CRUD)
-* Employee attendance tracking
-* Leave management
-* Salary and payroll information
-* HR analytics and dashboard
-* Centralized employee database
-* Search and filtering
-* Role-based access
+* User registration and authentication
+* Multiple vehicle management
+* Vehicle maintenance tracking
+* Odometer tracking through web and WhatsApp
+* Mileage- and time-based maintenance reminders
+* WhatsApp service notifications
+* Maintenance history
+* Arabic and English support
+* Admin dashboard for vehicle maintenance presets
 
 ## Technology
 
-* Frontend: Web Application
-* Backend: Full-stack architecture
-* Database: Relational database
-* Authentication: Secure user authentication
+* **Frontend / Hosting:** Vercel
+* **Database & Authentication:** Supabase
+* **Messaging:** Meta WhatsApp Cloud API
+* **Scheduling:** Vercel Cron or Supabase scheduled functions
+* **Icons:** Lucide
+* **Arabic Font:** Noto Sans Arabic
 
 ## Project Documentation
 
-The full project requirements and specifications are available in the Mini PRD.
+The complete requirements and specifications are defined in the Mini PRD.
